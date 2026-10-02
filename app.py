@@ -10,15 +10,25 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-load_dotenv()
+from pathlib import Path
+
+# Force loading .env directly from the folder containing this app.py file
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
 
 app = FastAPI(title="EduTech AI Tutor")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
+# Diagnostic check visible right when you start the server
+if not GEMINI_API_KEY:
+    print("\n❌ ERROR: GEMINI_API_KEY was NOT found! Check your .env file location.\n")
+else:
+    print(f"\n✅ GEMINI_API_KEY found: {GEMINI_API_KEY[:6]}... (Length: {len(GEMINI_API_KEY)})\n")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
 class Message(BaseModel):
     role: str
     content: str
