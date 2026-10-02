@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduTech AI Tutor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- KaTeX for Equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <!-- Marked for Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .prose-math p {
+      margin-bottom: 0.75rem;
+    }
+    .prose-math p:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 flex h-screen antialiased overflow-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- Ambient background glow effects -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -right-40 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Sidebar: Session History -->
+  <aside class="relative z-10 w-72 bg-slate-900/70 backdrop-blur-xl border-r border-slate-800/80 flex flex-col justify-between hidden md:flex">
+    <div class="p-5 flex flex-col h-full">
+      
+      <!-- Brand Logo / Title -->
+      <div class="flex items-center space-x-3 mb-6 px-1">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/25">
+          π
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white">EduTech AI</h1>
+          <p class="text-[11px] text-slate-400 font-medium">Smart Learning Partner</p>
+        </div>
+      </div>
+
+      <button onclick="createNewSession()" class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 py-2.5 px-4 rounded-xl font-medium text-xs text-white transition shadow-md shadow-indigo-600/20 active:scale-[0.98] mb-5">
+        <span class="text-base leading-none">+</span>
+        <span>New Learning Session</span>
+      </button>
+
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Saved Sessions</div>
+      <div id="sessionList" class="flex-1 overflow-y-auto space-y-1.5 pr-1 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between px-1">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Gemini Powered
+        </span>
+        <span class="text-slate-400 font-mono text-[10px]">v2.1</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Chat Workspace -->
+  <div class="relative z-10 flex-1 flex flex-col h-full bg-slate-950/60 backdrop-blur-sm">
+    
+    <!-- Top Header Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-6 py-3.5 flex items-center justify-between shadow-sm">
+      <div class="flex items-center space-x-3 md:hidden">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">π</div>
+        <span class="text-xs font-semibold">EduTech AI</span>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-2">
+        <span class="text-xs text-slate-400 font-medium">Tutor Controls</span>
+      </div>
+
+      <!-- Controls & Dropdowns -->
+      <div class="flex items-center space-x-2.5">
+        <!-- Language Selector -->
+        <div class="relative">
+          <select id="languageSelect" class="bg-slate-800/90 text-slate-200 text-xs border border-slate-700/80 rounded-lg pl-2.5 pr-7 py-1.5 font-medium appearance-none focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer transition">
+            <option value="en" selected>English</option>
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="te">తెలుగు (Telugu)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400 text-[10px]">▼</div>
+        </div>
+
+        <!-- Grade Cohort -->
+        <div class="relative">
+          <select id="studentLevel" class="bg-slate-800/90 text-slate-200 text-xs border border-slate-700/80 rounded-lg pl-2.5 pr-7 py-1.5 font-medium appearance-none focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer transition">
+            <option value="10th">10th Class (Board Prep)</option>
+            <option value="inter" selected>Intermediate (+2 / JEE / NEET)</option>
+            <option value="degree">Degree / Undergrad</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400 text-[10px]">▼</div>
+        </div>
+
+        <!-- Pedagogical Mode -->
+        <div class="relative">
+          <select id="tutorMode" class="bg-slate-800/90 text-slate-200 text-xs border border-slate-700/80 rounded-lg pl-2.5 pr-7 py-1.5 font-medium appearance-none focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer transition">
+            <option value="socratic">Socratic (Step-by-Step Hints)</option>
+            <option value="full_solution">Comprehensive Solution</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400 text-[10px]">▼</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chat Message Container -->
+    <main id="chatLog" class="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 max-w-4xl w-full mx-auto">
+      <!-- Default Welcome Card -->
+      <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/40 border border-slate-800/90 shadow-xl backdrop-blur-md">
+        <div class="flex items-start space-x-3.5">
+          <span class="text-2xl">💡</span>
+          <div>
+            <h2 class="text-sm font-semibold text-slate-100 mb-1">Welcome to your personalized AI Tutor!</h2>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Ask any question in Math, Physics, Chemistry, or Engineering. You can type formulas, speak via voice in English/Hindi/Telugu, or attach a photo of a textbook problem.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer Input Bar -->
+    <footer class="p-4 md:p-5 border-t border-slate-800/80 bg-slate-900/70 backdrop-blur-xl">
+      <div class="max-w-4xl mx-auto flex flex-col space-y-2.5">
+        
+        <!-- Image Preview Card -->
+        <div id="imagePreviewContainer" class="hidden items-center space-x-2 bg-slate-800/90 border border-slate-700/80 p-2 rounded-xl w-max shadow-md">
+          <img id="imagePreview" src="" class="h-12 w-12 object-cover rounded-lg" />
+          <span class="text-xs text-slate-300 font-medium">Image attached</span>
+          <button onclick="removeImage()" class="text-rose-400 hover:text-rose-300 text-xs font-bold px-2 transition">✕</button>
+        </div>
+
+        <!-- Input Field Container -->
+        <div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800/90 rounded-2xl p-2 shadow-inner focus-within:border-indigo-500/80 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+          
+          <!-- Photo Upload Button -->
+          <label class="cursor-pointer p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 transition active:scale-95" title="Upload question photo">
+            📷
+            <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="previewImage(event)">
+          </label>
+
+          <!-- Voice Mic Button -->
+          <button id="micBtn" onclick="toggleVoiceRecording()" class="p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 transition active:scale-95" title="Speak question">
+            🎙️
+          </button>
+
+          <!-- Main Input Textarea -->
+          <textarea id="userInput" rows="1" placeholder="Type your problem or scientific equation..." 
+            class="flex-1 bg-transparent px-3 py-1.5 text-sm focus:outline-none resize-none text-slate-100 placeholder-slate-500 font-normal leading-relaxed"></textarea>
+
+          <!-- Send Action Button -->
+          <button id="sendBtn" onclick="sendMessage()" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-semibold tracking-wide transition shadow-md shadow-indigo-600/25 disabled:opacity-40 active:scale-95">
+            Send
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let attachedBase64 = null;
+    let currentSessionId = null;
+    let recognition = null;
+    let isRecording = false;
+
+    // --- Session & History Persistence ---
+    function initSessions() {
+      let sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      if (sessions.length === 0) {
+        createNewSession();
+      } else {
+        currentSessionId = sessions[0].id;
+        renderSessionList();
+        loadActiveSession();
+      }
+    }
+
+    function createNewSession() {
+      let sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      const newSession = {
+        id: 'sess_' + Date.now(),
+        title: 'New Problem Session',
+        messages: []
+      };
+      sessions.unshift(newSession);
+      localStorage.setItem('edutech_sessions', JSON.stringify(sessions));
+      currentSessionId = newSession.id;
+      renderSessionList();
+      loadActiveSession();
+    }
+
+    function renderSessionList() {
+      const container = document.getElementById('sessionList');
+      const sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      container.innerHTML = '';
+      
+      sessions.forEach(sess => {
+        const item = document.createElement('div');
+        const isActive = sess.id === currentSessionId;
+        item.className = `p-2.5 rounded-xl cursor-pointer truncate transition font-medium ${
+          isActive 
+            ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/30' 
+            : 'hover:bg-slate-800/60 text-slate-400 hover:text-slate-200'
+        }`;
+        item.innerText = sess.title;
+        item.onclick = () => {
+          currentSessionId = sess.id;
+          renderSessionList();
+          loadActiveSession();
+        };
+        container.appendChild(item);
+      });
+    }
+
+    function loadActiveSession() {
+      const chatLog = document.getElementById('chatLog');
+      chatLog.innerHTML = '';
+      const sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      const active = sessions.find(s => s.id === currentSessionId);
+      if (!active || active.messages.length === 0) {
+        chatLog.innerHTML = `
+          <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/40 border border-slate-800/90 shadow-xl backdrop-blur-md">
+            <div class="flex items-start space-x-3.5">
+              <span class="text-2xl">💡</span>
+              <div>
+                <h2 class="text-sm font-semibold text-slate-100 mb-1">New Session Started</h2>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Type a concept, formula, or problem statement to begin learning.
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      active.messages.forEach(msg => {
+        appendMessage(msg.role, msg.content, msg.image);
+      });
+    }
+
+    function saveMessageToSession(role, content, image = null) {
+      let sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      let active = sessions.find(s => s.id === currentSessionId);
+      if (active) {
+        if (active.messages.length === 0 && role === 'user') {
+          active.title = content.slice(0, 26) || "Problem Session";
+        }
+        active.messages.push({ role, content, image });
+        localStorage.setItem('edutech_sessions', JSON.stringify(sessions));
+        renderSessionList();
+      }
+    }
+
+    // --- Math Rendering ---
+    function renderMath(element) {
+      renderMathInElement(element, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }
+
+    // --- UI Append Message ---
+    function appendMessage(role, text, imgSrc = null) {
+      const log = document.getElementById('chatLog');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `max-w-2xl rounded-2xl p-4 text-xs md:text-sm leading-relaxed prose-math shadow-sm ${
+        role === 'user' 
+          ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-br-none shadow-indigo-600/10' 
+          : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none shadow-black/20'
+      }`;
+
+      if (imgSrc) {
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.className = 'max-h-48 rounded-xl mb-3 border border-slate-700/60 shadow-sm';
+        bubble.appendChild(img);
+      }
+
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = marked.parse(text || "");
+      bubble.appendChild(contentDiv);
+      renderMath(contentDiv);
+
+      msgDiv.appendChild(bubble);
+      log.appendChild(msgDiv);
+      log.scrollTop = log.scrollHeight;
+      return { bubble, contentDiv };
+    }
+
+    // --- Streaming Handler ---
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const text = input.value.trim();
+      if (!text && !attachedBase64) return;
+
+      const userText = text;
+      const userImg = attachedBase64;
+      
+      input.value = '';
+      removeImage();
+      
+      appendMessage('user', userText, userImg);
+      saveMessageToSession('user', userText, userImg);
+
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+
+      // Stream receiver bubble
+      const { contentDiv } = appendMessage('assistant', '');
+      let fullAssistantText = "";
+
+      const sessions = JSON.parse(localStorage.getItem('edutech_sessions') || '[]');
+      const active = sessions.find(s => s.id === currentSessionId);
+      const historyPayload = active ? active.messages.slice(-6) : [];
+
+      try {
+        const res = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userText,
+            student_level: document.getElementById('studentLevel').value,
+            mode: document.getElementById('tutorMode').value,
+            language: document.getElementById('languageSelect').value,
+            image_base64: userImg,
+            history: historyPayload
+          })
+        });
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const parsed = JSON.parse(line.replace('data: ', ''));
+                if (parsed.token) {
+                  fullAssistantText += parsed.token;
+                  contentDiv.innerHTML = marked.parse(fullAssistantText || "");
+                  renderMath(contentDiv);
+                  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+                } else if (parsed.error) {
+                  fullAssistantText = parsed.error;
+                  contentDiv.innerHTML = marked.parse(fullAssistantText || "");
+                }
+              } catch (e) {}
+            }
+          }
+        }
+        saveMessageToSession('assistant', fullAssistantText);
+      } catch (err) {
+        contentDiv.innerHTML = marked.parse('⚠️ Connection interrupted: ' + err.message);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // --- Voice Dictation (Web Speech API) ---
+    function toggleVoiceRecording() {
+      const micBtn = document.getElementById('micBtn');
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Speech recognition is not supported in this browser. Please use Chrome/Edge.");
+        return;
+      }
+
+      if (isRecording) {
+        recognition.stop();
+        return;
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      
+      const lang = document.getElementById('languageSelect').value;
+      recognition.lang = lang === 'hi' ? 'hi-IN' : (lang === 'te' ? 'te-IN' : 'en-IN');
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.classList.remove('bg-slate-800/60', 'text-slate-300');
+        micBtn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
+      };
+
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('userInput').value += (document.getElementById('userInput').value ? ' ' : '') + transcript;
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        micBtn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+        micBtn.classList.add('bg-slate-800/60', 'text-slate-300');
+      };
+
+      recognition.onerror = () => {
+        isRecording = false;
+        micBtn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+        micBtn.classList.add('bg-slate-800/60', 'text-slate-300');
+      };
+
+      recognition.start();
+    }
+
+    // --- Image Preview Handlers ---
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        attachedBase64 = reader.result;
+        document.getElementById('imagePreview').src = attachedBase64;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        document.getElementById('imagePreviewContainer').classList.add('flex');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeImage() {
+      attachedBase64 = null;
+      document.getElementById('imageInput').value = '';
+      document.getElementById('imagePreviewContainer').classList.add('hidden');
+      document.getElementById('imagePreviewContainer').classList.remove('flex');
+    }
+
+    document.getElementById('userInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    window.onload = initSessions;
+  </script>
+</body>
+</html>
