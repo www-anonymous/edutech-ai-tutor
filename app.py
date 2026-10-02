@@ -11,24 +11,26 @@ from google import genai
 from google.genai import types
 
 from pathlib import Path
-
-# Force loading .env directly from the folder containing this app.py file
+# Load local .env only if the physical file exists
 env_path = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=env_path, override=True)
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
 
 app = FastAPI(title="EduTech AI Tutor")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Accept either variable name from Render or local environment
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
-# Diagnostic check visible right when you start the server
 if not GEMINI_API_KEY:
-    print("\n❌ ERROR: GEMINI_API_KEY was NOT found! Check your .env file location.\n")
+    print("\n❌ CRITICAL: No GEMINI_API_KEY found in environment or .env!\n")
+    client = None
 else:
-    print(f"\n✅ GEMINI_API_KEY found: {GEMINI_API_KEY[:6]}... (Length: {len(GEMINI_API_KEY)})\n")
-
-client = genai.Client(api_key=GEMINI_API_KEY)
+    print(f"\n✅ GEMINI_API_KEY loaded: {GEMINI_API_KEY[:6]}... (Length: {len(GEMINI_API_KEY)})\n")
+    client = genai.Client(api_key=GEMINI_API_KEY)
 class Message(BaseModel):
     role: str
     content: str
